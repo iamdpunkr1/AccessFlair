@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdnjs.cloudflare.com; object-src 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"> -->
+
+    <title>AccessFlair</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.4.7/peerjs.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            /*padding: 20px;*/
+            background-color: #000000;
+            color: #e2e8f0;
+            /* min-height: 100vh; */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100%;
+            height: 100%;
+        }
+
+        .container {
+            margin-top: 20px;
+            margin-left: 20px;
+            margin-right:20px;
+            width: 100%;
+            max-width: 800px;
+            background-color: #1e293b;
+            padding: 2rem;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            /* display: none; */
+        }
+
+        .title {
+            text-align: center;
+            font-size: 1.875rem;
+            font-weight: 700;
+            color: #f8fafc;
+            margin: 0 0 2rem 0;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background-color: #020617;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid #334155;
+        }
+
+        .controls {
+            margin-bottom: 1.5rem;
+        }
+
+        .controls:last-of-type {
+            margin-bottom: 2rem;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: #cbd5e1;
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background-color: #0f172a;
+            color: #f8fafc;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #60a5fa;
+            box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2);
+        }
+
+        input::placeholder {
+            color: #64748b;
+        }
+
+        .btn{
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        #copyButton {
+            background-color: #475569;
+            color: white;
+            padding: 0.75rem;
+            min-width: 44px;
+        }
+
+        #copyButton:hover {
+            background-color: #334155;
+        }
+
+        #copyButton.copied {
+            background-color: #22c55e;
+        }
+
+        #connect {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        #connect:hover {
+            background-color: #2563eb;
+        }
+
+        #disconnect {
+            background-color: #ef4444;
+            color: white;
+            margin-left: 1rem;
+        }
+
+        #disconnect:hover:not(:disabled) {
+            background-color: #dc2626;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        #video {
+            width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            /* margin-top: auto; */
+            border: #ffb76a 2px solid;
+            background-color: #020617;
+        }
+
+        #video-container {
+            width: 100%;
+             
+            border: #22c55e 2px solid;
+
+        }
+        .grabbing {cursor: -webkit-grabbing; cursor: grabbing;}
+        .text {cursor: text;}
+
+        /* @media screen and (max-width: 1024px) {
+            #video-container {
+                width: 100%;
+            }
+        } */
+
+       
+        .cursor-not-allowed {
+            cursor: not-allowed;
+        }   
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+        }
+
+        .tooltip {
+            position: absolute;
+            background: #1e293b;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            transform: translateY(-100%);
+            margin-top: -8px;
+            border: 1px solid #334155;
+        }
+
+        .tooltip.show {
+            opacity: 1;
+        }
+
+        .host{
+            display: none;
+            height: 100%;
+            margin: auto auto;
+        }
+
+        #client{
+            display: none;
+            width: 100%;
+            height: 100vh;
+            /* display: flex; Flex container */
+            flex-direction: column;
+            justify-content: center;
+            /* border: dotted 1px #9f9f9f; */
+        }
+
+        #menu{
+            display: flex;
+            justify-content: space-between;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 5px;
+            background-color: #020617;
+            padding: 5px;
+            width: 600px;
+            margin: 2px auto;
+            border: #d9e5ff 1px solid;
+            position:fixed;
+            top:-50px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 999;
+
+        }
+
+        #menu button{
+            border: none;
+            border-radius: 15%;
+        }
+
+        .screen-btn{
+            position: relative;
+            cursor: pointer;
+        }
+        .screen-btn:hover{
+            background-color: #475569;
+        }
+
+        .screen-btn .num{
+            position: absolute;
+            top:50%;
+            left:50%;
+            transform: translate(-50%, -60%);
+            color: #020617;
+            font-size: smaller;
+        }
+
+        #buttons{
+            display: flex;
+            gap: 1rem;
+        }
+
+        #disconnects{
+            background-color: #ef4444;
+            color: white;
+            border-radius: 20%;
+            /* width: 40px; */
+            /* height: 20px; */
+            padding:3px 8px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="container">
+        <h3 class="title">AccessFlair</h3>
+        <div class="status" id="status">Not connected</div>
+        <div class="controls">
+            <label for="peerId">Your ID</label>
+            <div class="input-group">
+                <input type="text" id="peerId" placeholder="Your Peer ID" readonly>
+                <button class="btn" id="copyButton" title="Copy ID">
+                    📋
+                </button>
+                <div class="tooltip">Copied!</div>
+            </div>
+        </div>
+        <div class="controls">
+            <label for="connectToId">Remote ID</label>
+            <input type="text" id="connectToId" placeholder="Enter Remote ID">
+            <div style="display: flex; gap: 0.5rem; margin-top: 20px;">
+                <button class="btn" id="connect">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="client">
+        <div id="menu">
+            <div id="buttons">
+               
+            </div>
+            <button id="disconnects" >⛌</button>
+        </div>
+
+        <div id="video-container" tabindex="0"  onmousemove="handleMouseMove()" onclick="handleMouseClick()" oncontextmenu="handleMouseClick()"
+        onmousedown="handleMouseDown()" onmouseup="handleMouseUp()" onkeyup="handleKeyUp()"
+         onmousewheel="handleMouseScroll()">
+            <video  id="video"
+            autoplay playsinline></video>
+        </div>
+
+    </div>
+
+    <div class="host" id="host" >
+        <h3>Your screen is being shared...</h3>
+        <button class="btn" id="disconnect" disabled>Disconnect</button>
+    </div>
+
+
+    <script>
+        const copyButton = document.getElementById('copyButton');
+        const peerId = document.getElementById('peerId');
+        const tooltip = document.querySelector('.tooltip');
+
+        copyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(peerId.value);
+                copyButton.classList.add('copied');
+                tooltip.classList.add('show');
+                
+                setTimeout(() => {
+                    copyButton.classList.remove('copied');
+                    tooltip.classList.remove('show');
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+        });
+    </script>
+    <script>
+        let os = null;
+        let peer = null;
+        let currentCall = null;
+        let screenStream = null;
+        let connectedPeerId = null;
+        let dataChannel = null;
+        let clientMouseActive = false;
+        let active = {
+            video: false,
+            screenshot:false
+        }
+        let mouseMoveInterval;
+        let hostMouseActive = false;
+
+        let isStreaming = false;
+        let videoDimension = {
+            width:1920,
+            height:1080
+        }
+
+
+
+        const container = document.getElementById('container');
+        const host = document.getElementById('host');
+        const client = document.getElementById('client');
+        const status = document.getElementById('status');
+        const peerIdInput = document.getElementById('peerId');
+        const connectToIdInput = document.getElementById('connectToId');
+        const videoElement = document.getElementById('video');
+        const menubar = document.getElementById("menu");
+        const connectButton = document.getElementById('connect');
+        const disconnectButton = document.getElementById('disconnect');
+        const generateButton = document.getElementById('generateId');
+        const disconnects = document.getElementById('disconnects');
+
+        let videoStream;
+        let screenshotInterval;
+        let interval;
+
+        function setCursorStyle(data){
+
+            videoElement.style.cursor = data;   
+        }
+
+        document.addEventListener('mousemove', e => {
+            if(e.clientY<50){
+                menubar.style.top='0';
+             //   //console.log("menubar called")
+            }else{
+                menubar.style.top='-50px';
+            }
+        })
+
+        function updateStatus(message) {
+            status.textContent = message;
+          //  //console.log('Status:', message);
+        }
+
+        function handleError(error) {
+            console.error('Error:', error);
+            updateStatus('Error: ' + error.message || error);
+        }
+
+        // Function to generate a more robust short ID
+        function generateShortIds(length = 8) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+
+            // Add a timestamp in milliseconds for uniqueness
+            const timestamp = Date.now().toString();
+
+            // Generate a random salt
+            let salt = '';
+            for (let i = 0; i < length; i++) {
+                salt += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+
+            // Combine timestamp and salt, and shuffle the result
+            const combined = timestamp + salt;
+
+            // Shuffle the combined string
+            const shuffled = combined.split('').sort(() => 0.5 - Math.random()).join('');
+
+            // Return the requested length
+            return shuffled.slice(0, length);
+        }
+
+
+       // //console.log(generateShortId())
+
+        // Function to generate a short ID
+        function generateShortId(length = 6) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let id = '';
+            for (let i = 0; i < length; i++) {
+                id += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return id;
+        }
+
+        
+
+        // Initialize peer connection
+        async function generateId(){
+            if (peer) {
+                peer.destroy();
+            }
+
+            updateStatus('Initializing...');
+            // Generate a short ID
+            const shortId = generateShortId();
+
+            peer = new Peer(shortId, {
+                debug: 3, // Enable detailed debug logs
+                config: {'iceServers': [
+                { urls:[
+                    'stun:stun1.l.google.com:19302',
+                    'stun:stun2.l.google.com:19302',
+                    'stun:stun3.l.google.com:19302',
+                    'stun:stun4.l.google.com:19302'
+                ] },
+                {
+                    urls: 'turn:freestun.net:3479',
+                    username: 'free',
+                    credential: 'free',
+                }   
+                ]}
+            });
+            
+            peer.on('open', async (id) => {
+                peerIdInput.value = id;
+                
+                updateStatus('Ready to connect');
+                // generateButton.disabled = true;
+                connectButton.disabled = false;
+                os = await window.eApi.getOs();
+                // shareButton.disabled = false;
+            });
+
+            peer.on('connection', (conn) => {
+                conn.on('open',async () => {
+                    connectedPeerId = conn.peer;
+                    updateStatus('Peer connected: ' + conn.peer);
+                    setupConnectionButtons(true);
+                    dataChannel = conn;
+                    setupDataChannel();
+                    await captureVideoStream();
+                    startMouseMove();
+                    container.style.display = 'none';
+                    host.style.display = 'block';
+                    const getDisplays = await window.eApi.getDisplays();
+                   // //console.log('Displays: ', getDisplays);
+                    dataChannel.send({type: 'displays', data: getDisplays});
+                });
+            });
+
+            peer.on('call', (call) => {
+                currentCall = call;
+               // //console.log('Incoming call:');
+                updateStatus('Incoming call...');
+                
+                call.answer(); // Answer without sending stream
+                
+                call.on('stream', (remoteStream) => {
+                    container.style.display = 'none';
+                    // videoElement.style.display = 'block';
+                    client.style.display = 'flex';
+                    videoElement.srcObject = remoteStream;
+                   // //console.log('Receiving remote stream');
+                    updateStatus('Receiving remote stream');
+                });
+
+                call.on('close', () => {
+                    videoElement.srcObject = null;
+                    ////console.log('Call ended');
+                    updateStatus('Call ended');
+                    setupConnectionButtons(false);
+                    stopSharing();
+                });
+            });
+
+            peer.on('error', handleError);
+
+            peer.on('close', () => {
+            //    //console.log('Connection closed');
+                updateStatus('Connection closed');
+                setupConnectionButtons(false);
+            });
+            peer.on('disconnected', () => {
+                updateStatus('Connection lost. Attempting to reconnect...');
+                peer.reconnect();
+            });
+        };
+
+        generateId();
+
+        // Connect to a remote peer
+        connectButton.addEventListener('click', () => {
+            const remotePeerId = connectToIdInput.value.trim();
+            if (!remotePeerId) {
+                alert('Please enter a remote peer ID');
+                return;
+            }
+            if (!peer) {
+                alert('Please generate your ID first');
+                return;
+            }
+
+            updateStatus('Connecting to ' + remotePeerId + '...');
+
+            // Establish data connection first
+            const conn = peer.connect(remotePeerId);
+            conn.on('open', () => {
+                connectedPeerId = remotePeerId;
+                updateStatus('Connected to: ' + remotePeerId);
+                setupConnectionButtons(true);
+                dataChannel = conn;
+                setupDataChannel();
+            });
+
+            conn.on('error', handleError);
+        });
+
+        // sendMessageButton.addEventListener('click', async() => {
+        //     // const getDisplays = await ipcRenderer.invoke('get-displays');
+        //     ipcRenderer.send('set-origin',"");
+        //     //console.log('Displays: ', getDisplays);
+        // });
+        disconnects.addEventListener('click', async () => {
+            if(dataChannel){
+               await dataChannel.send({type: 'disconnect'});
+            }
+            if (currentCall) {
+               await currentCall.close();
+            }
+            if (peer) {
+               await peer.disconnect();
+            }
+            stopSharing();
+            stopMouseMove();
+            setupConnectionButtons(false);
+            updateStatus('Disconnected');
+            
+        });
+
+        // Disconnect
+        disconnectButton.addEventListener('click', async () => {
+            if(dataChannel){
+               await dataChannel.send({type: 'disconnect'});
+            }
+            if (currentCall) {
+               await currentCall.close();
+            }
+            if (peer) {
+               await peer.disconnect();
+            }
+            stopSharing();
+            stopMouseMove();
+            setupConnectionButtons(false);
+            updateStatus('Disconnected');
+            
+        });
+
+        
+        // Share screen
+        async function shareScreenShot(){
+            if(active.screenshot === true) return;
+
+            active.screenshot = true;
+            active.video = false;
+            clearInterval(screenshotInterval);
+           // //console.log('Sharing screenshot');
+
+            try {
+            const screenDim = await window.eApi.getScreenResolution();
+            if(screenDim.os === 'darwin'){
+                videoDimension.height = screenDim.screenHeight;
+                videoDimension.width = screenDim.screenWidth;
+            }
+
+        const fps = 1000; // Desired frames per second
+
+        // Start streaming screenshots
+        const startScreenshotStream = async () => {
+            // Set up canvas and context
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            canvas.width = videoDimension.width; 
+            canvas.height = videoDimension.height; 
+
+            // Capture stream from canvas
+            const stream = canvas.captureStream(fps);
+
+            if (connectedPeerId) {
+            // Call connected peer with the stream
+            // currentCall = peer.call(connectedPeerId, stream);
+            await setStream(stream);
+            // videoElement.srcObject = stream; // Display the stream locally
+            setupSharingButtons(true);
+            updateStatus("Sharing continuous screenshots");
+
+            currentCall.on("error", handleError);
+
+            // Manage screenshot rendering
+            let isRendering = false; // Flag to ensure smooth rendering
+            screenshotInterval = setInterval(async () => {
+                if (isRendering) return; // Skip if a rendering operation is ongoing
+                isRendering = true;
+
+                try {
+                const screenshot = await window.eApi.getScreenshot();
+                
+                // Create an image from the screenshot
+                const img = new Image();
+                img.src = URL.createObjectURL(
+                    new Blob([screenshot], { type: "image/jpeg" })
+                );
+
+                img.onload = () => {
+                    // Clear canvas and draw new frame
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+                    // Revoke Blob URL to free memory
+                    URL.revokeObjectURL(img.src);
+                    isRendering = false; // Reset flag after rendering
+                };
+
+                img.onerror = (err) => {
+                    console.error("Error loading image:", err);
+                    isRendering = false; // Reset flag if image fails
+                };
+                } catch (err) {
+                console.error("Error capturing screenshot:", err);
+                isRendering = false; // Reset flag on error
+                }
+            }, 1000 / fps); // Capture rate based on FPS
+
+            // Stop sharing when the peer disconnects or sharing ends
+            stream.getTracks()[0].onended = () => {
+                stopSharing();
+                stopMouseMove();
+            };
+
+            active.screenshot = true;
+            active.video = false;
+            } else {
+            updateStatus("No peer connected. Cannot share screenshots.");
+            stopSharing();
+            stopMouseMove();
+
+            }
+
+
+        // Stop sharing when the peer disconnects or sharing ends
+        stream.getTracks()[0].onended = () => {
+            stopSharing();
+        };
+        };
+
+        // Start the screenshot sharing stream
+        await startScreenshotStream();
+        } catch (err) {
+        handleError(err);
+        stopSharing();
+        }
+        }
+                // Share screen using continuous screenshots
+        // shareButton.addEventListener("click", async () => {
+        //     await captureVideoStream();
+        //     startMouseMove();
+        // });
+
+        // Stop sharing
+        // stopButton.addEventListener('click', stopSharing);
+
+        async function stopSharing() {
+            if (screenStream) {
+                await screenStream.getTracks().forEach(track => track.stop());
+                screenStream = null;
+            }
+            if (currentCall) {
+                await currentCall.close();
+                currentCall = null;
+            }
+            videoElement.srcObject = null;
+            if (screenshotInterval) {
+                clearInterval(screenshotInterval);
+            }
+
+            if(videoStream){
+                await videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+
+            // if(dataChannel){
+            //     await dataChannel.close();
+            //     dataChannel = null;
+            // }
+
+            setupSharingButtons(false);
+            stopMouseMove();
+            updateStatus('Sharing stopped');
+            container.style.display = 'block';
+            host.style.display = 'none';
+            client.style.display = 'none';
+
+            
+        }
+
+        function setupConnectionButtons(connected) {
+            connectButton.disabled = connected;
+            disconnectButton.disabled = !connected;
+            // shareButton.disabled = !connected;
+            connectToIdInput.disabled = connected;
+        }
+
+        function setupSharingButtons(sharing) {
+            // shareButton.disabled = sharing;
+            // stopButton.disabled = !sharing;
+        }
+
+        async function stopSharingNew(){
+            if (currentCall) {
+                await currentCall.close();
+            }
+            if (peer) {
+                await peer.disconnect();
+            }
+
+            if(dataChannel){
+                await dataChannel.close();
+                dataChannel = null;
+            }
+            stopSharing();
+            stopMouseMove();
+            setupConnectionButtons(false);
+            updateStatus('Disconnected');
+        }
+        
+        
+        let inactivityTimeout;
+
+        function setClientMouseActive(data){
+                     videoElement.classList.add('cursor-not-allowed');
+                    clientMouseActive=true;
+                    // //console.log("Client coordinates received: ", data);
+
+                    // Clear the previous timeout if it exists
+                    clearTimeout(inactivityTimeout);
+
+                    // Set a new timeout to remove the class after 1 second of inactivity
+                    inactivityTimeout = setTimeout(() => {
+                        videoElement.classList.remove('cursor-not-allowed');
+                        clientMouseActive=false;
+                    }, 1000);
+        }
+
+        function setButtons(data){
+            const buttons = document.getElementById("buttons");
+            buttons.innerHTML = "";
+            if(data.totalDisplays===1){
+              //  //console.log("Inside Displays")
+                return;
+            }
+            data.sources.forEach((e,i) => {
+             //   //console.log("Displays: ", e);
+                const button = document.createElement("button");
+                button.className="screen-btn";
+                button.innerHTML=`
+                    <svg fill="#000000" height="20px" width="20px" version="1.2" baseProfile="tiny" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 256 256" xml:space="preserve"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <g id="XMLID_8_"> <path id="XMLID_12_" d="M256,212V41H0v171h114v27H79v12h98v-12h-35v-27H256z M16,57h224v139H16V57z"></path> </g> </g></svg>
+                    <span class="num">${i+1}</span>`;
+                // button.textContent=e.name;
+                button.addEventListener("click", () => {
+                    // //console.log("Button index: ", index);
+                    dataChannel.send({ type:"screen-number", data:i});
+                });
+                buttons.appendChild(button);
+            });
+        }
+
+        function setupDataChannel() {
+            if(!dataChannel) {
+                return;
+            }
+
+            dataChannel.on('open', () => {
+               //console.log('Data channel open');
+            });
+
+            dataChannel.on('data', async (data) => {
+
+                switch(data.type){
+                    case 'mouse-move':
+                        window.eApi.mouseMove(data);
+                        break;
+                    case 'mouse-click':
+                        window.eApi.mouseClick(data);
+                        break;
+                    case 'key-up':
+                        window.eApi.keyUp(data.payload);
+                        break;
+                    case 'mouse-scroll':
+                        window.eApi.mouseScroll(data.payload);
+                        await captureVideoStream();
+                        break;
+                    case 'mouse-down':
+                        window.eApi.mouseDown(data.payload);
+                        break;
+                    case 'mouse-up':
+                        window.eApi.mouseUp(data.payload);
+                        break;
+                    case 'screen-number':
+                        window.eApi.setScreenNumber('screen-number', data.data);
+                        break;
+                    case 'disconnect':
+                        await stopSharingNew();
+                        break;
+                    case 'client-mouse-move':
+                        setClientMouseActive(data.data);
+                        break;
+                    case 'displays':
+                        setButtons(data.data);
+                        break;
+                    case 'cursor-style':
+                        setCursorStyle(data.payload);
+                        break;
+                    default:
+                        //console.log('Unknown message type:', data.type);
+                }
+                // ipcRenderer.send('mouse-move', data);
+            });
+
+            dataChannel.on('close', () => {
+                updateStatus('Data channel closed');
+            });
+
+            dataChannel.on('error', handleError);
+        }
+
+        
+
+
+        function stopScreenshot(){
+          //  //console.log('Stopping screenshot');
+            clearInterval(interval);
+        }
+         
+        let prev;
+
+        function startMouseMove(){
+            mouseMoveInterval = setInterval(async () => {
+                const data = await window.eApi.getMousePos();
+                // //console.log('Data:', data);
+                if(data){
+                    dataChannel.send({type:"client-mouse-move", data});
+                    await captureVideoStream();
+                    
+                }else{  
+                    const data = await window.eApi.getCursorStyle();
+                    
+                    if(data !== prev){
+                        //console.log("cursor-style: ", data);
+                        prev = data;
+                        dataChannel.send({type:"cursor-style", payload:data});
+                    }
+                    
+                    // dataChannel.send({type:"cursor-style", data});
+                    await shareScreenShot();
+                        
+                }
+            }, 100);
+        }
+
+        function stopMouseMove(){
+            clearInterval(mouseMoveInterval);
+        }
+
+        async function setStream(stream) {
+             if(currentCall){
+                screenStream = stream;
+                const videoTrack = stream.getVideoTracks()[0];
+                const sender = currentCall.peerConnection
+                    .getSenders()
+                    .find(s => s.track.kind === 'video');
+                
+                if (sender) {
+                    await sender.replaceTrack(videoTrack);
+                }
+            }else{
+                currentCall = peer.call(connectedPeerId, stream);
+                
+            }
+        }
+
+        async function captureVideoStream() {
+            if (active.video===true) {
+                return;
+            }
+
+            active.screenshot = false;
+            active.video = true;
+            ////console.log('Sharing video stream');
+            try {
+                const data = await window.eApi.captureScreen();
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        // cursor: 'never',
+                        mandatory: {
+                            chromeMediaSource: 'desktop',
+                            chromeMediaSourceId: data,
+                        },
+                    },
+                    audio: false,
+                });
+                await setStream(videoStream);
+                updateStatus('Screen sharing started');
+                
+            } catch (error) {
+                handleError(error);
+            }
+        }  
+
+        function handleMouseMove (){ 
+            if(!dataChannel) {
+                return;
+            }
+
+            if(clientMouseActive) return;
+
+            const videoRects = videoElement.getBoundingClientRect();
+
+            const mousePosition = {
+                type:"mouse-move",
+                x: (event.clientX - videoRects.left)/videoRects.width,
+                y: (event.clientY - videoRects.top)/videoRects.height
+            };
+
+            
+            dataChannel.send(mousePosition);
+        }
+
+        const handleMouseClick = () => {
+            if(!dataChannel) {
+                return;
+            }
+
+            dataChannel.send({type:"mouse-click", button:event.button});
+        }
+        let isTrackpad;
+        const handleMouseScroll = () => {
+            
+            const { deltaX, deltaY, deltaMode } = event;
+            const isMac = os === "darwin";
+            if(isMac){
+                isTrackpad = Math.abs(deltaY) < 10;
+            }
+            //console.log("Mouse-scroll: ", event);
+                if(dataChannel){
+                    dataChannel.send({
+                        type: 'mouse-scroll',
+                        payload: { deltaX, deltaY:isMac? isTrackpad? deltaY*3 : deltaY: deltaY  }
+                    });
+                }
+            
+        }
+
+
+        const handleMouseDown = () => {
+            if(dataChannel){
+            //  //console.log("mouse down sent via RTC: ");
+            
+            dataChannel.send({
+                type: 'mouse-down',
+                payload: true
+                });
+
+            videoElement.classList.add("grabbing");
+        }
+        }
+
+        const handleMouseUp = () => {
+            if(dataChannel){
+            //  //console.log("mouse up sent via RTC: ");
+            dataChannel.send({
+                type: 'mouse-up',
+                payload: true
+                });
+            
+            videoElement.classList.remove("grabbing");
+            
+        }
+        }
+
+        const modiferCheckers = (e) => {
+            const modifier= [];
+            if (e.ctrlKey) {
+                modifier.push("control");
+            }
+            if (e.altKey) {
+                modifier.push("alt");
+            }
+            if (e.shiftKey) {
+                modifier.push("shift");
+            }
+            if (e.metaKey) {
+                modifier.push("Meta");
+            }
+            return modifier;
+            }    
+
+    let keyBoardTimeout;
+
+    const handleKeyUp = () => {
+        //console.log("Key Up: ", event);
+
+        const modifier = modiferCheckers(event);
+        if(modifier.length<1){
+            videoElement.classList.add("text");
+            clearTimeout(keyBoardTimeout);
+            keyBoardTimeout= setTimeout(()=>{
+                videoElement.classList.remove("text");
+            },1000);
+        }
+
+        if(dataChannel){
+          //console.log("key up sent via RTC: ");
+            dataChannel.send({
+                type: 'key-up',
+                payload: { key: event.key, code: modifier }
+            });
+        }
+        
+    };
+
+    </script>
+    
+
+    <script src="index.js"></script>
+</body>
+</html>

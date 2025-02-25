@@ -1,0 +1,87 @@
+{
+  "name": "accessflair",
+ "version": "1.0.0",
+ "description": "Remote Desktop Application",
+ "main": "main.js",
+ "keywords": [
+ "electron",
+ "remote",
+ "screensharing"
+  ],
+ "homepage": "https://www.accessflair.com/",
+ "author": {
+ "name": "Jay J. Das",
+ "email": "jay@alegralabs.com",
+ "url": "https://www.alegralabs.com/"
+  },
+ "contributors": [
+  {
+ "name": "Dipankar Prasad",
+ "email": "iamdpunkr@gmail.com",
+ "url": "https://github.com/iamdpunkr1"
+  }
+  ],
+ "scripts": {
+ "start": "electron main.js",
+ "rebuild": "",
+ "build": "electron-builder build --publish never",
+ "postinstall": "electron-builder install-app-deps && npm run rebuild",
+ "build:unpack": "npm run build && electron-builder --dir",
+ "build:win": "npm run build && electron-builder --win",
+ "build:mac": "electron-builder --mac",
+ "build:linux": "electron-builder --linux"
+  },
+ "build": {
+ "appId": "com.alegralabs.accessflair",
+ "productName": "AccessFlair",
+ "mac": {
+ "category": "public.app-category.utilities",
+ "entitlements": "entitlements.mac.plist",
+ "entitlementsInherit": "entitlements.mac.plist",
+ "type": "distribution",
+ "artifactName": "${productName}.${ext}",
+ "hardenedRuntime": true,
+ "target": [
+  {
+ "target": "default",
+ "arch": [
+ "universal"
+  ]
+  }
+  ],
+ "icon": "build/icon.icns",
+ "gatekeeperAssess": false,
+ "notarize": true
+  },
+ "dmg": {
+ "sign": false,
+ "contents": [
+  {
+ "x": 130,
+ "y": 220
+  },
+  {
+ "x": 410,
+ "y": 220,
+ "type": "link",
+ "path": "/Applications"
+  }
+  ]
+  },
+ "afterSign": "script/notarize.js"
+  },
+ "dependencies": {
+ "@hurdlegroup/robotjs": "0.11.7",
+ "bindings": "^1.5.0",
+ "cursor-shape-detector": "file:cursor-shape-detector",
+ "dotenv": "^16.4.7",
+ "node-addon-api": "^7.0.0",
+ "screenshot-desktop": "1.12.3"
+  },
+ "devDependencies": {
+ "@electron/notarize": "^2.5.0",
+ "electron": "28.2.0",
+ "electron-builder": "^25.1.8"
+  },
+ "gypfile": true
+ }
