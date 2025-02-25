@@ -18,4 +18,5 @@ contextBridge.exposeInMainWorld('eApi', {
     getDisplays: () => ipcRenderer.invoke('get-displays'),
     setOrigin: (data) => ipcRenderer.send('set-origin', data),
     getOs: () => ipcRenderer.invoke('get-os'),
+    
 });
