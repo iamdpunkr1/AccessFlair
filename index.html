@@ -277,12 +277,102 @@
             padding:3px 8px;
             cursor: pointer;
         }
+
+
+        .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.75);
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.modal-content {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    width: 90%;
+    max-width: 420px;
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+    overflow: hidden;
+    animation: modal-appear 0.3s forwards;
+    border: 1px solid #333333;
+}
+
+@keyframes modal-appear {
+    from {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    padding: 20px 24px;
+    background-color: #252525;
+    border-bottom: 1px solid #333333;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #ff5252;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 24px;
+    color: #e0e0e0;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+.modal-footer {
+    padding: 16px 24px 20px;
+    display: flex;
+    justify-content: flex-end;
+    border-top: 1px solid #333333;
+}
+
+.modal-footer .btn {
+    padding: 10px 20px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.modal-footer .btn:hover {
+    background-color: #1e88e5;
+}
+
+.modal-footer .btn:active {
+    transform: scale(0.98);
+    background-color: #1976d2;
+}
     </style>
 </head>
 <body>
     <div class="container" id="container">
         <h3 class="title">AccessFlair</h3>
         <div class="status" id="status">Not connected</div>
+        <button id="test">
+            Test ERROR
+        </button>
         <div class="controls">
             <label for="peerId">Your ID</label>
             <div class="input-group">
@@ -324,8 +414,98 @@
         <button class="btn" id="disconnect" disabled>Disconnect</button>
     </div>
 
+    <div class="modal" id="errorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Something went wrong</h3>
+            </div>
+            <div class="modal-body">
+                <p id="errorMessage">An unexpected error occurred.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="closeModal">Okay</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="alertModal">
+        <div class="modal-content">
+            <div class="modal-body">
+                <p id="alertMessage">An unexpected error occurred.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="closeAlertModal">Okay</button>
+            </div>
+        </div>
+    </div>
+
 
     <script>
+
+
+        // Function to show the error modal with a custom message
+        function showErrorModal(message) {
+            const modal = document.getElementById('errorModal');
+            const errorMessage = document.getElementById('errorMessage');
+            
+            if (message) {
+                errorMessage.textContent = message;
+            } else {
+                errorMessage.textContent = "An unexpected error occurred.";
+            }
+            
+            modal.style.display = "flex";
+        }
+
+        // Close the modal when the Okay button is clicked
+        document.getElementById('closeModal').addEventListener('click', function() {
+            document.getElementById('errorModal').style.display = "none";
+        });
+
+        // Close the modal when clicking outside the modal content
+        document.getElementById('errorModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                this.style.display = "none";
+            }
+        });
+
+
+        //ALERT Modal
+        function showAlertModal(message) {
+            const alertModal = document.getElementById('alertModal');
+            const alertMessage = document.getElementById('alertMessage');
+            
+            if (message) {
+                alertMessage.textContent = message;
+            } else {
+                alertMessage.textContent = "An unexpected error occurred.";
+            }
+            
+            modal.style.display = "flex";
+        }
+
+        document.getElementById('closeAlertModal').addEventListener('click', function() {
+            document.getElementById('alertModal').style.display = "none";
+        });
+
+        document.getElementById('alertModal').addEventListener('click', function(event) {
+            if (event.target === this) {
+                this.style.display = "none";
+            }
+        });
+
+
+
+        // Example of how to use the error modal:
+        const testButton = document.getElementById("test");
+        testButton.onclick = async function (){
+            const data  =  await window.eApi.checkAccess();
+            if(data.error){
+                showErrorModal(data.message);
+            }
+        }
+
+
         const copyButton = document.getElementById('copyButton');
         const peerId = document.getElementById('peerId');
         const tooltip = document.querySelector('.tooltip');
@@ -341,7 +521,7 @@
                     tooltip.classList.remove('show');
                 }, 2000);
             } catch (err) {
-                console.error('Failed to copy text: ', err);
+                showErrorModal('Failed to copy text');
             }
         });
     </script>
@@ -405,8 +585,9 @@
         }
 
         function handleError(error) {
-            console.error('Error:', error);
+            // console.error('Error:', error);
             updateStatus('Error: ' + error.message || error);
+            showErrorModal(error.message);
         }
 
         // Function to generate a more robust short ID
@@ -481,8 +662,11 @@
                 updateStatus('Ready to connect');
                 // generateButton.disabled = true;
                 connectButton.disabled = false;
+
                 os = await window.eApi.getOs();
-                // shareButton.disabled = false;
+                if(os.error){
+                    showErrorModal(os.message);
+                }
             });
 
             peer.on('connection', (conn) => {
@@ -496,9 +680,12 @@
                     startMouseMove();
                     container.style.display = 'none';
                     host.style.display = 'block';
-                    const getDisplays = await window.eApi.getDisplays();
-                   // //console.log('Displays: ', getDisplays);
-                    dataChannel.send({type: 'displays', data: getDisplays});
+                    const data = await window.eApi.getDisplays();
+                    if(!data.error){
+                     dataChannel.send({type: 'displays', data});
+                    }else{
+                        showErrorModal(data.message);
+                    }
                 });
             });
 
@@ -546,11 +733,11 @@
         connectButton.addEventListener('click', () => {
             const remotePeerId = connectToIdInput.value.trim();
             if (!remotePeerId) {
-                alert('Please enter a remote peer ID');
+                showAlertModal('Please enter a remote peer ID');
                 return;
             }
             if (!peer) {
-                alert('Please generate your ID first');
+                showAlertModal('Please generate your ID first');
                 return;
             }
 
@@ -621,7 +808,8 @@
 
             try {
             const screenDim = await window.eApi.getScreenResolution();
-            if(screenDim.os === 'darwin'){
+
+            if(screenDim.os === 'darwin' && !screenDim.error){
                 videoDimension.height = screenDim.screenHeight;
                 videoDimension.width = screenDim.screenWidth;
             }
@@ -657,7 +845,10 @@
 
                 try {
                 const screenshot = await window.eApi.getScreenshot();
-                
+                if(screenshot.error){
+                    showErrorModal(screenshot.message);
+                    return;
+                }
                 // Create an image from the screenshot
                 const img = new Image();
                 img.src = URL.createObjectURL(
@@ -675,11 +866,12 @@
                 };
 
                 img.onerror = (err) => {
-                    console.error("Error loading image:", err);
+                   showErrorModal("Error loading image");
                     isRendering = false; // Reset flag if image fails
                 };
                 } catch (err) {
-                console.error("Error capturing screenshot:", err);
+                // console.error("Error capturing screenshot:", err);
+                showErrorModal(screenDim.message || "Error capturing screenshot")
                 isRendering = false; // Reset flag on error
                 }
             }, 1000 / fps); // Capture rate based on FPS
@@ -899,14 +1091,19 @@
         function startMouseMove(){
             mouseMoveInterval = setInterval(async () => {
                 const data = await window.eApi.getMousePos();
-                // //console.log('Data:', data);
+                if(data.error){
+                    showErrorModal(data.message);
+                    return;
+                }
                 if(data){
                     dataChannel.send({type:"client-mouse-move", data});
                     await captureVideoStream();
                     
                 }else{  
                     const data = await window.eApi.getCursorStyle();
-                    
+                    if(data.error){
+                        showErrorModal(data.message);
+                    }
                     if(data !== prev){
                         //console.log("cursor-style: ", data);
                         prev = data;
@@ -951,6 +1148,9 @@
             ////console.log('Sharing video stream');
             try {
                 const data = await window.eApi.captureScreen();
+                if(data.error){
+                    showErrorModal(os.message);
+                }
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: {
                         // cursor: 'never',
